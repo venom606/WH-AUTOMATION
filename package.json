@@ -1,0 +1,21 @@
+cd /mnt/data/wa-automation && cat > package.json << 'EOF'
+{
+  "name": "wa-automation",
+  "version": "1.0.0",
+  "description": "Legitimate WhatsApp automation tool - auto-reply, scheduled messages, keyword bot, group welcome",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.9",
+    "express": "^4.19.2",
+    "pino": "^9.5.0",
+    "qrcode": "^1.5.4"
+  }
+}
+EOF
+echo "package.json created"
