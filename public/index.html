@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WhatsApp Automation</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background:#0b1220; color:#e2e8f0; font-family:'Segoe UI',system-ui,sans-serif; }
+  ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:3px}
+  .card{background:#111a2e;border:1px solid #1e293b;border-radius:14px}
+  .btn{transition:.15s} .btn:active{transform:scale(.98)}
+  .tab-on{background:#22c55e;color:#052e13}
+  .tab-off{background:#1e293b;color:#94a3b8}
+  input,textarea{background:#0b1220;border:1px solid #1e293b;border-radius:10px;padding:.6rem .75rem;color:#fff;width:100%;outline:none}
+  input:focus,textarea:focus{border-color:#22c55e}
+  label{font-size:.75rem;color:#94a3b8;display:block;margin-bottom:.35rem}
+</style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-4xl mx-auto p-4 md:p-6">
+
+  <!-- header -->
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-[#052e13] font-bold text-xl">W</div>
+    <div>
+      <h1 class="text-lg font-bold text-white">WhatsApp Automation</h1>
+      <p class="text-xs text-slate-500">Auto-reply · Keywords · Schedule · Welcome</p>
+    </div>
+    <div class="ml-auto flex items-center gap-2">
+      <span id="dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+      <span id="stateTxt" class="text-xs text-slate-400">Disconnected</span>
+    </div>
+  </div>
+
+  <!-- connect card -->
+  <div class="card p-5 mb-5">
+    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-4">Link your WhatsApp</h2>
+    <div id="linkArea">
+      <div class="flex gap-2 mb-4">
+        <button id="mCode" onclick="setMethod('code')" class="btn tab-on flex-1 py-2 rounded-lg text-xs font-medium">Pairing Code</button>
+        <button id="mQR" onclick="setMethod('qr')" class="btn tab-off flex-1 py-2 rounded-lg text-xs font-medium">QR Code</button>
+      </div>
+      <div id="phoneBox" class="mb-4">
+        <label>Your WhatsApp number (with country code, no +)</label>
+        <input id="phone" placeholder="94771234567">
+      </div>
+      <button id="linkBtn" onclick="doLink()" class="btn w-full py-3 bg-green-500 hover:bg-green-600 text-[#052e13] font-semibold rounded-lg text-sm">Generate Link</button>
+      <div id="result" class="mt-4"></div>
+    </div>
+    <div id="linkedArea" class="hidden text-center py-2">
+      <div class="text-green-400 text-sm font-medium mb-1">✓ Connected</div>
+      <div id="meTxt" class="text-xs text-slate-500 mb-3"></div>
+      <button onclick="logout()" class="btn text-xs px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200">Unlink device</button>
+    </div>
+  </div>
+
+  <!-- feature cards (only useful once linked, but always editable) -->
+  <div class="grid md:grid-cols-2 gap-5">
+
+    <!-- auto reply -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-white">Auto-reply</h3>
+        <label class="inline-flex items-center cursor-pointer m-0">
+          <input type="checkbox" id="arEnabled" class="sr-only peer" onchange="saveAutoReply()">
+          <div class="relative w-10 h-5 bg-slate-700 peer-checked:bg-green-500 rounded-full transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:h-4 after:w-4 after:rounded-full after:transition peer-checked:after:translate-x-5"></div>
+        </label>
+      </div>
+      <p class="text-xs text-slate-500 mb-2">Replies automatically to direct messages.</p>
+      <textarea id="arMsg" rows="3" onchange="saveAutoReply()"></textarea>
+    </div>
+
+    <!-- welcome -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-white">Group welcome</h3>
+        <label class="inline-flex items-center cursor-pointer m-0">
+          <input type="checkbox" id="wcEnabled" class="sr-only peer" onchange="saveWelcome()">
+          <div class="relative w-10 h-5 bg-slate-700 peer-checked:bg-green-500 rounded-full transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:h-4 after:w-4 after:rounded-full after:transition peer-checked:after:translate-x-5"></div>
+        </label>
+      </div>
+      <p class="text-xs text-slate-500 mb-2">Use <code class="text-green-400">@user</code> to mention the new member.</p>
+      <textarea id="wcMsg" rows="3" onchange="saveWelcome()"></textarea>
+    </div>
+
+    <!-- keywords -->
+    <div class="card p-5 md:col-span-2">
+      <h3 class="text-sm font-semibold text-white mb-3">Keyword bot</h3>
+      <p class="text-xs text-slate-500 mb-3">When a message contains a keyword, reply with the matching text.</p>
+      <div id="kwList" class="space-y-2 mb-3"></div>
+      <button onclick="addKw()" class="btn text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200">+ Add keyword</button>
+      <button onclick="saveKeywords()" class="btn text-xs px-3 py-1.5 bg-green-500 hover:bg-green-600 rounded-lg text-[#052e13] font-medium ml-2">Save keywords</button>
+    </div>
+
+    <!-- scheduled -->
+    <div class="card p-5">
+      <h3 class="text-sm font-semibold text-white mb-3">Schedule a message</h3>
+      <div class="space-y-3">
+        <div><label>To (number or group JID)</label><input id="scTo" placeholder="94771234567"></div>
+        <div><label>Message</label><textarea id="scMsg" rows="2"></textarea></div>
+        <div><label>Send at</label><input id="scAt" type="datetime-local"></div>
+        <button onclick="addSchedule()" class="btn w-full py-2 bg-green-500 hover:bg-green-600 text-[#052e13] font-medium rounded-lg text-sm">Schedule</button>
+      </div>
+      <div id="scList" class="mt-4 space-y-2"></div>
+    </div>
+
+    <!-- bulk -->
+    <div class="card p-5">
+      <h3 class="text-sm font-semibold text-white mb-1">Bulk send</h3>
+      <p class="text-xs text-slate-500 mb-3">Only to people who agreed to receive messages. 4s gap between sends.</p>
+      <div class="space-y-3">
+        <div><label>Numbers (one per line)</label><textarea id="bkTo" rows="4" placeholder="94771234567&#10;94789876543"></textarea></div>
+        <div><label>Message</label><textarea id="bkMsg" rows="2"></textarea></div>
+        <button onclick="doBulk()" class="btn w-full py-2 bg-green-500 hover:bg-green-600 text-[#052e13] font-medium rounded-lg text-sm">Send to all</button>
+        <div id="bkResult" class="text-xs text-slate-400"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-center text-xs text-slate-600 mt-6">Use responsibly. Sending unsolicited bulk messages can get your number banned by WhatsApp.</p>
+</div>
+
+<script>
+let method = 'code';
+let poll = null;
+
+async function jget(u){ return (await fetch(u)).json(); }
+async function jpost(u,b){ return (await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})).json(); }
+async function jdel(u){ return (await fetch(u,{method:'DELETE'})).json(); }
+
+function setMethod(m){
+  method=m;
+  mCode.className='btn flex-1 py-2 rounded-lg text-xs font-medium '+(m==='code'?'tab-on':'tab-off');
+  mQR.className='btn flex-1 py-2 rounded-lg text-xs font-medium '+(m==='qr'?'tab-on':'tab-off');
+  phoneBox.style.display = m==='code' ? 'block':'none';
+}
+
+async function doLink(){
+  linkBtn.textContent='Connecting...'; linkBtn.disabled=true;
+  result.innerHTML='<div class="text-xs text-slate-400">Please wait...</div>';
+  const body = method==='code' ? {method:'code', phone: phone.value.trim()} : {method:'qr'};
+  if(method==='code' && !body.phone){ result.innerHTML='<div class="text-xs text-red-400">Enter your number first.</div>'; linkBtn.textContent='Generate Link'; linkBtn.disabled=false; return; }
+  try{
+    const r = await jpost('/api/link', body);
+    render(r);
+  }catch(e){ result.innerHTML='<div class="text-xs text-red-400">'+e.message+'</div>'; }
+  linkBtn.textContent='Generate Link'; linkBtn.disabled=false;
+  if(!poll) poll=setInterval(refresh,2500);
+}
+
+function render(r){
+  if(r.error){ result.innerHTML='<div class="text-xs text-red-400 mb-2">'+r.error+'</div>'; }
+  if(r.pairingCode){
+    result.innerHTML='<div class="text-center py-4 bg-[#0b1220] rounded-xl border border-slate-800">'+
+      '<div class="text-xs text-slate-500 mb-2">Enter this code in WhatsApp &rarr; Linked Devices &rarr; Link with phone number</div>'+
+      '<div class="text-3xl font-bold tracking-[.3em] text-green-400">'+r.pairingCode+'</div></div>';
+  } else if(r.qrImage){
+    result.innerHTML='<div class="text-center py-3 bg-white rounded-xl"><img src="'+r.qrImage+'" class="mx-auto" width="230"></div>'+
+      '<div class="text-xs text-slate-500 text-center mt-2">WhatsApp &rarr; Linked Devices &rarr; Link a device &rarr; scan</div>';
+  }
+}
+
+async function refresh(){
+  const s = await jget('/api/status');
+  const map={disconnected:['bg-slate-600','Disconnected'],connecting:['bg-yellow-500','Connecting'],waiting:['bg-yellow-500','Waiting for link'],linked:['bg-green-500','Connected']};
+  const [c,t]=map[s.state]||map.disconnected;
+  dot.className='w-2.5 h-2.5 rounded-full '+c; stateTxt.textContent=t;
+  if(s.state==='linked'){
+    linkArea.classList.add('hidden'); linkedArea.classList.remove('hidden');
+    meTxt.textContent = s.me ? s.me.split(':')[0].replace('@s.whatsapp.net','') : '';
+    if(poll){clearInterval(poll);poll=null;}
+  }else{
+    linkArea.classList.remove('hidden'); linkedArea.classList.add('hidden');
+    if(s.state==='waiting') render(s);
+  }
+}
+
+async function logout(){ await jpost('/api/logout'); result.innerHTML=''; refresh(); }
+
+// ---- config ----
+async function loadConfig(){
+  const c = await jget('/api/config');
+  arEnabled.checked=c.autoReply.enabled; arMsg.value=c.autoReply.message;
+  wcEnabled.checked=c.welcome.enabled; wcMsg.value=c.welcome.message;
+  renderKw(c.keywords); renderSchedules(c.schedules);
+}
+async function saveAutoReply(){ await jpost('/api/config/autoreply',{enabled:arEnabled.checked,message:arMsg.value}); }
+async function saveWelcome(){ await jpost('/api/config/welcome',{enabled:wcEnabled.checked,message:wcMsg.value}); }
+
+let kws=[];
+function renderKw(list){ kws=list||[]; if(!kws.length) kws=[{keyword:'',reply:''}]; drawKw(); }
+function drawKw(){
+  kwList.innerHTML = kws.map((k,i)=>
+    '<div class="flex gap-2"><input placeholder="keyword" value="'+esc(k.keyword)+'" oninput="kws['+i+'].keyword=this.value" class="w-1/3">'+
+    '<input placeholder="reply" value="'+esc(k.reply)+'" oninput="kws['+i+'].reply=this.value">'+
+    '<button onclick="kws.splice('+i+',1);drawKw()" class="btn px-3 bg-slate-700 rounded-lg text-slate-400">✕</button></div>').join('');
+}
+function addKw(){ kws.push({keyword:'',reply:''}); drawKw(); }
+async function saveKeywords(){ const r=await jpost('/api/config/keywords',{keywords:kws.filter(k=>k.keyword&&k.reply)}); renderKw(r); alert('Keywords saved'); }
+
+async function addSchedule(){
+  if(!scTo.value||!scMsg.value||!scAt.value){alert('Fill all schedule fields');return;}
+  await jpost('/api/schedule',{to:scTo.value.trim(),message:scMsg.value,at:new Date(scAt.value).toISOString()});
+  scTo.value='';scMsg.value='';scAt.value='';
+  loadConfig();
+}
+function renderSchedules(list){
+  scList.innerHTML=(list||[]).filter(s=>!s.sent).map(s=>
+    '<div class="flex justify-between items-center text-xs bg-[#0b1220] border border-slate-800 rounded-lg px-3 py-2">'+
+    '<span class="text-slate-300">'+esc(s.to)+' · '+new Date(s.at).toLocaleString()+'</span>'+
+    '<button onclick="delSchedule(\''+s.id+'\')" class="text-slate-500 hover:text-red-400">✕</button></div>').join('');
+}
+async function delSchedule(id){ await jdel('/api/schedule/'+id); loadConfig(); }
+
+async function doBulk(){
+  const recips=bkTo.value.split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!recips.length||!bkMsg.value){bkResult.textContent='Add numbers and a message.';return;}
+  bkResult.textContent='Sending to '+recips.length+'...';
+  const r=await jpost('/api/bulk',{recipients:recips,message:bkMsg.value});
+  bkResult.innerHTML='<span class="text-green-400">Sent '+r.sent+'</span> · <span class="text-red-400">Failed '+(r.failed||0)+'</span>';
+}
+
+function esc(s){return String(s||'').replace(/"/g,'&quot;');}
+
+setMethod('code'); loadConfig(); refresh(); setInterval(refresh,4000);
+</script>
+</body>
+</html>
