@@ -2,228 +2,455 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WhatsApp Automation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WA Automation Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  body { background:#0b1220; color:#e2e8f0; font-family:'Segoe UI',system-ui,sans-serif; }
-  ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:3px}
-  .card{background:#111a2e;border:1px solid #1e293b;border-radius:14px}
-  .btn{transition:.15s} .btn:active{transform:scale(.98)}
-  .tab-on{background:#22c55e;color:#052e13}
-  .tab-off{background:#1e293b;color:#94a3b8}
-  input,textarea{background:#0b1220;border:1px solid #1e293b;border-radius:10px;padding:.6rem .75rem;color:#fff;width:100%;outline:none}
-  input:focus,textarea:focus{border-color:#22c55e}
-  label{font-size:.75rem;color:#94a3b8;display:block;margin-bottom:.35rem}
+  :root { --bg:#070d1a; --card:#0e1729; --line:#1c2a44; --acc:#25d366; }
+  * { font-family:'Inter',system-ui,sans-serif; }
+  h1,h2,h3,.display { font-family:'Sora',sans-serif; }
+  body { background:var(--bg); color:#dbe4f3; }
+  body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background: radial-gradient(700px 400px at 85% -10%, rgba(37,211,102,.09), transparent 60%),
+                radial-gradient(600px 400px at -10% 100%, rgba(56,132,255,.07), transparent 60%); }
+  ::-webkit-scrollbar{width:6px;height:6px} ::-webkit-scrollbar-thumb{background:#243450;border-radius:3px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;position:relative;z-index:1}
+  .btn{transition:.15s} .btn:active{transform:scale(.97)}
+  .btn-acc{background:var(--acc);color:#04170b;font-weight:600}
+  .btn-acc:hover{background:#2fe374}
+  .btn-ghost{background:#182339;color:#9db1d3;border:1px solid var(--line)}
+  .btn-ghost:hover{background:#1e2c47}
+  input,textarea,select{background:#0a1322;border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;color:#fff;width:100%;outline:none;font-size:.85rem}
+  input:focus,textarea:focus,select:focus{border-color:var(--acc)}
+  label{font-size:.72rem;color:#8296b8;display:block;margin-bottom:.35rem;letter-spacing:.02em;text-transform:uppercase;font-weight:600}
+  .navbtn{display:flex;align-items:center;gap:.65rem;width:100%;padding:.65rem .9rem;border-radius:11px;font-size:.85rem;color:#8ea2c4;transition:.15s;font-weight:500}
+  .navbtn:hover{background:#141f36;color:#dbe4f3}
+  .navbtn.on{background:rgba(37,211,102,.12);color:var(--acc);font-weight:600}
+  .toggle{position:relative;width:42px;height:23px;background:#243450;border-radius:999px;cursor:pointer;transition:.2s;flex-shrink:0}
+  .toggle.on{background:var(--acc)}
+  .toggle::after{content:'';position:absolute;top:2.5px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s}
+  .toggle.on::after{left:21px}
+  .stat{background:#0a1322;border:1px solid var(--line);border-radius:13px;padding:.9rem 1rem}
+  .fade{animation:fade .25s ease} @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .pulse{animation:pulse 1.6s infinite} @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .code-char{display:inline-flex;align-items:center;justify-content:center;width:2.4rem;height:3rem;background:#0a1322;border:1px solid #2a4a35;border-radius:10px;font-family:'Sora';font-weight:700;font-size:1.35rem;color:var(--acc)}
+  @media (prefers-reduced-motion:reduce){.fade,.pulse{animation:none}}
+  .toast{position:fixed;bottom:22px;right:22px;z-index:60;background:#122a1c;border:1px solid #1f5c35;color:#7ce8a5;padding:.7rem 1.1rem;border-radius:12px;font-size:.83rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
+  .toast.show{opacity:1;transform:none}
+  .toast.err{background:#2a1216;border-color:#5c1f28;color:#ff8a94}
 </style>
 </head>
 <body class="min-h-screen">
-<div class="max-w-4xl mx-auto p-4 md:p-6">
+<div class="flex min-h-screen relative z-10">
 
-  <!-- header -->
-  <div class="flex items-center gap-3 mb-6">
-    <div class="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-[#052e13] font-bold text-xl">W</div>
-    <div>
-      <h1 class="text-lg font-bold text-white">WhatsApp Automation</h1>
-      <p class="text-xs text-slate-500">Auto-reply · Keywords · Schedule · Welcome</p>
-    </div>
-    <div class="ml-auto flex items-center gap-2">
-      <span id="dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-      <span id="stateTxt" class="text-xs text-slate-400">Disconnected</span>
-    </div>
-  </div>
-
-  <!-- connect card -->
-  <div class="card p-5 mb-5">
-    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-4">Link your WhatsApp</h2>
-    <div id="linkArea">
-      <div class="flex gap-2 mb-4">
-        <button id="mCode" onclick="setMethod('code')" class="btn tab-on flex-1 py-2 rounded-lg text-xs font-medium">Pairing Code</button>
-        <button id="mQR" onclick="setMethod('qr')" class="btn tab-off flex-1 py-2 rounded-lg text-xs font-medium">QR Code</button>
-      </div>
-      <div id="phoneBox" class="mb-4">
-        <label>Your WhatsApp number (with country code, no +)</label>
-        <input id="phone" placeholder="94771234567">
-      </div>
-      <button id="linkBtn" onclick="doLink()" class="btn w-full py-3 bg-green-500 hover:bg-green-600 text-[#052e13] font-semibold rounded-lg text-sm">Generate Link</button>
-      <div id="result" class="mt-4"></div>
-    </div>
-    <div id="linkedArea" class="hidden text-center py-2">
-      <div class="text-green-400 text-sm font-medium mb-1">✓ Connected</div>
-      <div id="meTxt" class="text-xs text-slate-500 mb-3"></div>
-      <button onclick="logout()" class="btn text-xs px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200">Unlink device</button>
-    </div>
-  </div>
-
-  <!-- feature cards (only useful once linked, but always editable) -->
-  <div class="grid md:grid-cols-2 gap-5">
-
-    <!-- auto reply -->
-    <div class="card p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold text-white">Auto-reply</h3>
-        <label class="inline-flex items-center cursor-pointer m-0">
-          <input type="checkbox" id="arEnabled" class="sr-only peer" onchange="saveAutoReply()">
-          <div class="relative w-10 h-5 bg-slate-700 peer-checked:bg-green-500 rounded-full transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:h-4 after:w-4 after:rounded-full after:transition peer-checked:after:translate-x-5"></div>
-        </label>
-      </div>
-      <p class="text-xs text-slate-500 mb-2">Replies automatically to direct messages.</p>
-      <textarea id="arMsg" rows="3" onchange="saveAutoReply()"></textarea>
-    </div>
-
-    <!-- welcome -->
-    <div class="card p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold text-white">Group welcome</h3>
-        <label class="inline-flex items-center cursor-pointer m-0">
-          <input type="checkbox" id="wcEnabled" class="sr-only peer" onchange="saveWelcome()">
-          <div class="relative w-10 h-5 bg-slate-700 peer-checked:bg-green-500 rounded-full transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:h-4 after:w-4 after:rounded-full after:transition peer-checked:after:translate-x-5"></div>
-        </label>
-      </div>
-      <p class="text-xs text-slate-500 mb-2">Use <code class="text-green-400">@user</code> to mention the new member.</p>
-      <textarea id="wcMsg" rows="3" onchange="saveWelcome()"></textarea>
-    </div>
-
-    <!-- keywords -->
-    <div class="card p-5 md:col-span-2">
-      <h3 class="text-sm font-semibold text-white mb-3">Keyword bot</h3>
-      <p class="text-xs text-slate-500 mb-3">When a message contains a keyword, reply with the matching text.</p>
-      <div id="kwList" class="space-y-2 mb-3"></div>
-      <button onclick="addKw()" class="btn text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200">+ Add keyword</button>
-      <button onclick="saveKeywords()" class="btn text-xs px-3 py-1.5 bg-green-500 hover:bg-green-600 rounded-lg text-[#052e13] font-medium ml-2">Save keywords</button>
-    </div>
-
-    <!-- scheduled -->
-    <div class="card p-5">
-      <h3 class="text-sm font-semibold text-white mb-3">Schedule a message</h3>
-      <div class="space-y-3">
-        <div><label>To (number or group JID)</label><input id="scTo" placeholder="94771234567"></div>
-        <div><label>Message</label><textarea id="scMsg" rows="2"></textarea></div>
-        <div><label>Send at</label><input id="scAt" type="datetime-local"></div>
-        <button onclick="addSchedule()" class="btn w-full py-2 bg-green-500 hover:bg-green-600 text-[#052e13] font-medium rounded-lg text-sm">Schedule</button>
-      </div>
-      <div id="scList" class="mt-4 space-y-2"></div>
-    </div>
-
-    <!-- bulk -->
-    <div class="card p-5">
-      <h3 class="text-sm font-semibold text-white mb-1">Bulk send</h3>
-      <p class="text-xs text-slate-500 mb-3">Only to people who agreed to receive messages. 4s gap between sends.</p>
-      <div class="space-y-3">
-        <div><label>Numbers (one per line)</label><textarea id="bkTo" rows="4" placeholder="94771234567&#10;94789876543"></textarea></div>
-        <div><label>Message</label><textarea id="bkMsg" rows="2"></textarea></div>
-        <button onclick="doBulk()" class="btn w-full py-2 bg-green-500 hover:bg-green-600 text-[#052e13] font-medium rounded-lg text-sm">Send to all</button>
-        <div id="bkResult" class="text-xs text-slate-400"></div>
+  <!-- SIDEBAR -->
+  <aside class="hidden md:flex flex-col w-60 border-r border-[#1c2a44] p-4 gap-1 sticky top-0 h-screen">
+    <div class="flex items-center gap-3 px-2 py-3 mb-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#25d366] to-[#128c7e] flex items-center justify-center font-bold text-[#04170b] text-lg display">W</div>
+      <div>
+        <div class="font-bold text-sm display">WA Automation</div>
+        <div class="text-[11px] text-slate-500">Control panel v2.0</div>
       </div>
     </div>
-  </div>
+    <button class="navbtn on" data-tab="dashboard" onclick="go('dashboard')">📊 Dashboard</button>
+    <button class="navbtn" data-tab="link" onclick="go('link')">🔗 Link device</button>
+    <button class="navbtn" data-tab="autoreply" onclick="go('autoreply')">🤖 Auto-reply</button>
+    <button class="navbtn" data-tab="keywords" onclick="go('keywords')">🎯 Keyword bot</button>
+    <button class="navbtn" data-tab="schedule" onclick="go('schedule')">🕐 Schedules</button>
+    <button class="navbtn" data-tab="bulk" onclick="go('bulk')">📤 Bulk send</button>
+    <button class="navbtn" data-tab="groups" onclick="go('groups')">👥 Groups</button>
+    <button class="navbtn" data-tab="blacklist" onclick="go('blacklist')">🚫 Blacklist</button>
+    <button class="navbtn" data-tab="logs" onclick="go('logs')">📜 Activity log</button>
+    <div class="mt-auto card p-3 flex items-center gap-2.5">
+      <span id="dot" class="w-2.5 h-2.5 rounded-full bg-slate-600 flex-shrink-0"></span>
+      <div class="min-w-0">
+        <div id="stateTxt" class="text-xs font-semibold">Disconnected</div>
+        <div id="meTxt" class="text-[10px] text-slate-500 truncate"></div>
+      </div>
+    </div>
+  </aside>
 
-  <p class="text-center text-xs text-slate-600 mt-6">Use responsibly. Sending unsolicited bulk messages can get your number banned by WhatsApp.</p>
+  <!-- MAIN -->
+  <main class="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full pb-24 md:pb-8">
+
+    <!-- mobile header -->
+    <div class="md:hidden flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#25d366] to-[#128c7e] flex items-center justify-center font-bold text-[#04170b] display">W</div>
+        <div class="font-bold display text-sm">WA Automation</div>
+      </div>
+      <div class="flex items-center gap-2 text-xs"><span id="dotM" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span><span id="stateTxtM">Disconnected</span></div>
+    </div>
+
+    <!-- ============ DASHBOARD ============ -->
+    <section id="tab-dashboard" class="tab fade">
+      <h1 class="text-xl font-bold mb-1">Dashboard</h1>
+      <p class="text-sm text-slate-400 mb-5">Live overview of your automation.</p>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div class="stat"><div class="text-[11px] text-slate-500 uppercase font-semibold">Received</div><div id="stReceived" class="text-2xl font-bold display mt-1">0</div></div>
+        <div class="stat"><div class="text-[11px] text-slate-500 uppercase font-semibold">Sent</div><div id="stSent" class="text-2xl font-bold display mt-1 text-[#25d366]">0</div></div>
+        <div class="stat"><div class="text-[11px] text-slate-500 uppercase font-semibold">Auto-replies</div><div id="stAuto" class="text-2xl font-bold display mt-1">0</div></div>
+        <div class="stat"><div class="text-[11px] text-slate-500 uppercase font-semibold">Keyword hits</div><div id="stKw" class="text-2xl font-bold display mt-1">0</div></div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="card p-5">
+          <h3 class="font-semibold text-sm mb-3">Quick send</h3>
+          <label>To (number with country code)</label>
+          <input id="qsTo" placeholder="9477XXXXXXX">
+          <label class="mt-3">Message</label>
+          <textarea id="qsMsg" rows="3" placeholder="Type a message..."></textarea>
+          <button onclick="quickSend()" class="btn btn-acc w-full py-2.5 rounded-xl mt-3 text-sm">Send message</button>
+        </div>
+        <div class="card p-5">
+          <h3 class="font-semibold text-sm mb-3">Feature status</h3>
+          <div id="featList" class="space-y-2 text-sm"></div>
+          <button onclick="resetStats()" class="btn btn-ghost w-full py-2 rounded-xl mt-4 text-xs">Reset counters</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LINK ============ -->
+    <section id="tab-link" class="tab hidden fade">
+      <h1 class="text-xl font-bold mb-1">Link your WhatsApp</h1>
+      <p class="text-sm text-slate-400 mb-5">Connect this panel as a linked device on your WhatsApp account.</p>
+
+      <div id="linkArea" class="card p-6 max-w-lg">
+        <div class="flex gap-2 mb-5">
+          <button id="mCode" onclick="setMethod('code')" class="btn flex-1 py-2.5 rounded-xl text-xs font-semibold">🔢 Pairing code</button>
+          <button id="mQR" onclick="setMethod('qr')" class="btn flex-1 py-2.5 rounded-xl text-xs font-semibold">📷 QR code</button>
+        </div>
+        <div id="phoneBox">
+          <label>Your WhatsApp number (with country code — no +, no leading 0)</label>
+          <input id="phone" placeholder="e.g. 94771234567" inputmode="numeric">
+          <p class="text-[11px] text-slate-500 mt-1.5">Sri Lanka example: 077 123 4567 → <b class="text-slate-300">94771234567</b></p>
+        </div>
+        <button id="linkBtn" onclick="doLink()" class="btn btn-acc w-full py-3 rounded-xl mt-4 text-sm">Generate</button>
+        <div id="result" class="mt-4"></div>
+        <div class="mt-4 text-[11px] text-slate-500 leading-relaxed border-t border-[#1c2a44] pt-3">
+          On your phone: <b class="text-slate-300">WhatsApp → Settings → Linked Devices → Link a Device</b>.
+          For pairing code choose <b class="text-slate-300">"Link with phone number instead"</b> and type the code.
+          A confirmation message is sent to your WhatsApp once linked.
+        </div>
+      </div>
+
+      <div id="linkedArea" class="card p-6 max-w-lg hidden">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-11 h-11 rounded-full bg-[#25d366]/15 flex items-center justify-center text-xl">✅</div>
+          <div>
+            <div class="font-semibold">Connected</div>
+            <div id="meTxt2" class="text-xs text-slate-400"></div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between bg-[#0a1322] border border-[#1c2a44] rounded-xl px-4 py-3 mb-4">
+          <div class="text-sm">Notify my WhatsApp when linked</div>
+          <div id="tgNotify" class="toggle on" onclick="toggleNotify()"></div>
+        </div>
+        <button onclick="logout()" class="btn btn-ghost w-full py-2.5 rounded-xl text-sm text-red-400 border-red-900/40">Unlink device</button>
+      </div>
+    </section>
+
+    <!-- ============ AUTO-REPLY ============ -->
+    <section id="tab-autoreply" class="tab hidden fade">
+      <h1 class="text-xl font-bold mb-1">Auto-reply</h1>
+      <p class="text-sm text-slate-400 mb-5">Automatic reply for direct messages (never in groups).</p>
+      <div class="card p-6 max-w-lg space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="text-sm font-medium">Enable auto-reply</div>
+          <div id="tgAr" class="toggle" onclick="tgAr.classList.toggle('on');saveAutoReply()"></div>
+        </div>
+        <div><label>Reply message</label><textarea id="arMsg" rows="3" onchange="saveAutoReply()"></textarea></div>
+        <div><label>Cooldown (minutes) — don't reply to the same person again within</label><input id="arCd" type="number" min="0" value="30" onchange="saveAutoReply()"></div>
+        <div class="border-t border-[#1c2a44] pt-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-sm font-medium">Only during these hours <span class="text-[11px] text-slate-500 block">e.g. only reply after office hours</span></div>
+            <div id="tgArH" class="toggle" onclick="tgArH.classList.toggle('on');saveAutoReply()"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label>From</label><input id="arFrom" type="time" value="18:00" onchange="saveAutoReply()"></div>
+            <div><label>Until</label><input id="arTo" type="time" value="08:00" onchange="saveAutoReply()"></div>
+          </div>
+        </div>
+        <div class="border-t border-[#1c2a44] pt-4">
+          <div class="flex items-center justify-between">
+            <div class="text-sm font-medium">Group welcome message</div>
+            <div id="tgWc" class="toggle" onclick="tgWc.classList.toggle('on');saveWelcome()"></div>
+          </div>
+          <label class="mt-3">Welcome text (@user mentions the member)</label>
+          <textarea id="wcMsg" rows="2" onchange="saveWelcome()"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ KEYWORDS ============ -->
+    <section id="tab-keywords" class="tab hidden fade">
+      <h1 class="text-xl font-bold mb-1">Keyword bot</h1>
+      <p class="text-sm text-slate-400 mb-5">When a message contains a keyword, the matching reply is sent (works in chats and groups).</p>
+      <div class="card p-6 max-w-2xl">
+        <div id="kwList" class="space-y-2"></div>
+        <div class="flex gap-2 mt-4">
+          <button onclick="addKw()" class="btn btn-ghost px-4 py-2 rounded-xl text-xs">+ Add keyword</button>
+          <button onclick="saveKeywords()" class="btn btn-acc px-5 py-2 rounded-xl text-xs">Save keywords</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCHEDULE ============ -->
+    <section id="tab-schedule" class="tab hidden fade">
+      <h1 class="text-xl font-bold mb-1">Scheduled messages</h1>
+      <p class="text-sm text-slate-400 mb-5">Messages are sent automatically at the chosen time (checked every 30 s).</p>
+      <div class="grid md:grid-cols-2 gap-4 max-w-3xl">
+        <div class="card p-5">
+          <label>To (number or group JID)</label><input id="scTo" placeholder="9477XXXXXXX">
+          <label class="mt-3">Message</label><textarea id="scMsg" rows="3"></textarea>
+          <label class="mt-3">Send at</label><input id="scAt" type="datetime-local">
+          <button onclick="addSchedule()" class="btn btn-acc w-full py-2.5 rounded-xl mt-4 text-sm">Schedule</button>
+        </div>
+        <div class="card p-5">
+          <h3 class="font-semibold text-sm mb-3">Pending</h3>
+          <div id="scList" class="space-y-2 text-xs text-slate-400">No scheduled messages.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BULK ============ -->
+    <section id="tab-bulk" class="tab hidden fade">
+      <h1 class="text-xl font-bold mb-1">Bulk send</h1>
+      <p class="text-sm text-slate-400 mb-5">Only send to people who agreed to receive messages. A 4–6 s random gap keeps your number safe.</p>
+      <div class="card p-6 max-w-lg">
+        <label>Numbers (one per line)</label>
+        <textarea id="bkTo" rows="5" placeholder="9477XXXXXXX&#10;9471XXXXXXX"></textarea>
+        <label class="mt-3">Message</label>
+        <textarea id="bkMsg" rows="3"></textarea>
+        <button onclick="doBulk()" class="btn btn-acc w-full py-2.5 rounded-xl mt-4 text-sm">Send to all</button>
+        <div id="bkResult" class="text-xs mt-3 text-slate-400"></div>
+        <div class="text-[11px] text-amber-500/80 mt-3">⚠️ Unsolicited bulk messages can get your number banned by WhatsApp.</div>
+      </div>
+    </section>
+
+    <!-- ============ GROUPS ============ -->
+    <section id="tab-groups" class="tab hidden fade">
+      <h1 class="text-xl font-bold mb-1">Your groups</h1>
+      <p class="text-sm text-slate-400 mb-5">Copy a group JID to schedule or send messages to it.</p>
+      <div class="card p-5 max-w-2xl">
+        <button onclick="loadGroups()" class="btn btn-ghost px-4 py-2 rounded-xl text-xs mb-4">↻ Refresh groups</button>
+        <div id="grpList" class="space-y-2 text-sm text-slate-400">Link your WhatsApp first, then refresh.</div>
+      </div>
+    </section>
+
+    <!-- ============ BLACKLIST ============ -->
+    <section id="tab-blacklist" class="tab hidden fade">
+      <h1 class="text-xl font-bold mb-1">Blacklist</h1>
+      <p class="text-sm text-slate-400 mb-5">These numbers are completely ignored — no auto-reply, no keyword replies.</p>
+      <div class="card p-6 max-w-lg">
+        <label>Numbers (one per line)</label>
+        <textarea id="blList" rows="6" placeholder="9477XXXXXXX"></textarea>
+        <button onclick="saveBlacklist()" class="btn btn-acc w-full py-2.5 rounded-xl mt-4 text-sm">Save blacklist</button>
+      </div>
+    </section>
+
+    <!-- ============ LOGS ============ -->
+    <section id="tab-logs" class="tab hidden fade">
+      <h1 class="text-xl font-bold mb-1">Activity log</h1>
+      <p class="text-sm text-slate-400 mb-5">Latest 200 events from the server.</p>
+      <div class="card p-4 max-w-3xl">
+        <button onclick="loadLogs()" class="btn btn-ghost px-4 py-2 rounded-xl text-xs mb-3">↻ Refresh</button>
+        <div id="logList" class="font-mono text-[11px] space-y-1 max-h-[60vh] overflow-y-auto"></div>
+      </div>
+    </section>
+  </main>
 </div>
 
-<script>
-let method = 'code';
-let poll = null;
+<!-- mobile bottom nav -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#0e1729] border-t border-[#1c2a44] flex justify-around py-2 z-50">
+  <button onclick="go('dashboard')" class="text-lg p-2">📊</button>
+  <button onclick="go('link')" class="text-lg p-2">🔗</button>
+  <button onclick="go('autoreply')" class="text-lg p-2">🤖</button>
+  <button onclick="go('keywords')" class="text-lg p-2">🎯</button>
+  <button onclick="go('schedule')" class="text-lg p-2">🕐</button>
+  <button onclick="go('bulk')" class="text-lg p-2">📤</button>
+</nav>
 
-async function jget(u){ return (await fetch(u)).json(); }
-async function jpost(u,b){ return (await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})).json(); }
-async function jdel(u){ return (await fetch(u,{method:'DELETE'})).json(); }
+<div id="toast" class="toast"></div>
+
+<script>
+let method='code', poll=null, cfg=null;
+const $=id=>document.getElementById(id);
+async function jget(u){const r=await fetch(u);return r.json();}
+async function jpost(u,b){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});return r.json();}
+async function jdel(u){return (await fetch(u,{method:'DELETE'})).json();}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function toast(msg,err){const t=$('toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2600);}
+
+function go(tab){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.add('hidden'));
+  $('tab-'+tab).classList.remove('hidden');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  if(tab==='logs') loadLogs();
+  if(tab==='groups' && window._linked) loadGroups();
+}
 
 function setMethod(m){
   method=m;
-  mCode.className='btn flex-1 py-2 rounded-lg text-xs font-medium '+(m==='code'?'tab-on':'tab-off');
-  mQR.className='btn flex-1 py-2 rounded-lg text-xs font-medium '+(m==='qr'?'tab-on':'tab-off');
-  phoneBox.style.display = m==='code' ? 'block':'none';
+  $('mCode').className='btn flex-1 py-2.5 rounded-xl text-xs font-semibold '+(m==='code'?'btn-acc':'btn-ghost');
+  $('mQR').className='btn flex-1 py-2.5 rounded-xl text-xs font-semibold '+(m==='qr'?'btn-acc':'btn-ghost');
+  $('phoneBox').style.display=m==='code'?'block':'none';
+  $('result').innerHTML='';
 }
 
 async function doLink(){
-  linkBtn.textContent='Connecting...'; linkBtn.disabled=true;
-  result.innerHTML='<div class="text-xs text-slate-400">Please wait...</div>';
-  const body = method==='code' ? {method:'code', phone: phone.value.trim()} : {method:'qr'};
-  if(method==='code' && !body.phone){ result.innerHTML='<div class="text-xs text-red-400">Enter your number first.</div>'; linkBtn.textContent='Generate Link'; linkBtn.disabled=false; return; }
+  const btn=$('linkBtn');
+  const body=method==='code'?{method:'code',phone:$('phone').value.trim()}:{method:'qr'};
+  if(method==='code'&&!body.phone){toast('Enter your WhatsApp number first',1);return;}
+  btn.textContent='Connecting…';btn.disabled=true;
+  $('result').innerHTML='<div class="text-xs text-slate-400 pulse text-center py-4">Contacting WhatsApp servers…</div>';
   try{
-    const r = await jpost('/api/link', body);
-    render(r);
-  }catch(e){ result.innerHTML='<div class="text-xs text-red-400">'+e.message+'</div>'; }
-  linkBtn.textContent='Generate Link'; linkBtn.disabled=false;
-  if(!poll) poll=setInterval(refresh,2500);
+    const r=await fetch('/api/link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    render(d);
+    if(d.error) toast(d.error,1);
+  }catch(e){$('result').innerHTML='<div class="text-xs text-red-400">'+esc(e.message)+'</div>';}
+  btn.textContent='Generate';btn.disabled=false;
+  if(!poll)poll=setInterval(refresh,2500);
 }
 
 function render(r){
-  if(r.error){ result.innerHTML='<div class="text-xs text-red-400 mb-2">'+r.error+'</div>'; }
+  if(r.error&&!r.pairingCode&&!r.qrImage){
+    $('result').innerHTML='<div class="text-xs text-red-400 bg-red-950/30 border border-red-900/40 rounded-xl p-3">'+esc(r.error)+'</div>';
+    return;
+  }
   if(r.pairingCode){
-    result.innerHTML='<div class="text-center py-4 bg-[#0b1220] rounded-xl border border-slate-800">'+
-      '<div class="text-xs text-slate-500 mb-2">Enter this code in WhatsApp &rarr; Linked Devices &rarr; Link with phone number</div>'+
-      '<div class="text-3xl font-bold tracking-[.3em] text-green-400">'+r.pairingCode+'</div></div>';
+    const chars=(r.pairingCodeRaw||r.pairingCode.replace(/-/g,'')).split('');
+    $('result').innerHTML=
+      '<div class="text-center py-5 bg-[#0a1322] rounded-2xl border border-[#1f5c35]/50 fade">'+
+      '<div class="text-[11px] text-slate-500 mb-3 uppercase tracking-wide font-semibold">Your pairing code</div>'+
+      '<div class="flex justify-center gap-1.5 flex-wrap px-2">'+
+      chars.map((c,i)=>'<span class="code-char">'+esc(c)+'</span>'+(i===3?'<span class="flex items-center text-slate-600 px-1">—</span>':'')).join('')+
+      '</div>'+
+      '<button onclick="copyCode(\''+esc(r.pairingCodeRaw||'')+'\')" class="btn btn-ghost px-4 py-1.5 rounded-lg text-xs mt-4">📋 Copy code</button>'+
+      '<div class="text-[11px] text-slate-500 mt-3 px-4">WhatsApp → Linked Devices → Link a Device → <b class="text-slate-300">Link with phone number instead</b></div>'+
+      '<div class="text-[11px] text-amber-500/70 mt-1">Code expires in ~1 minute — enter it right away.</div></div>';
   } else if(r.qrImage){
-    result.innerHTML='<div class="text-center py-3 bg-white rounded-xl"><img src="'+r.qrImage+'" class="mx-auto" width="230"></div>'+
-      '<div class="text-xs text-slate-500 text-center mt-2">WhatsApp &rarr; Linked Devices &rarr; Link a device &rarr; scan</div>';
+    $('result').innerHTML='<div class="text-center py-4 bg-white rounded-2xl fade"><img src="'+r.qrImage+'" class="mx-auto" width="240" alt="QR code"></div>'+
+      '<div class="text-[11px] text-slate-500 text-center mt-2">WhatsApp → Linked Devices → Link a Device → scan</div>';
   }
 }
+function copyCode(c){navigator.clipboard.writeText(c).then(()=>toast('Code copied — paste it in WhatsApp'));}
 
 async function refresh(){
-  const s = await jget('/api/status');
-  const map={disconnected:['bg-slate-600','Disconnected'],connecting:['bg-yellow-500','Connecting'],waiting:['bg-yellow-500','Waiting for link'],linked:['bg-green-500','Connected']};
+  let s; try{s=await jget('/api/status');}catch(e){return;}
+  const map={disconnected:['bg-slate-600','Disconnected'],connecting:['bg-yellow-500 pulse','Connecting…'],waiting:['bg-yellow-500 pulse','Waiting for link'],linked:['bg-[#25d366]','Connected']};
   const [c,t]=map[s.state]||map.disconnected;
-  dot.className='w-2.5 h-2.5 rounded-full '+c; stateTxt.textContent=t;
+  ['dot','dotM'].forEach(i=>{if($(i))$(i).className='w-2.5 h-2.5 rounded-full flex-shrink-0 '+c;});
+  ['stateTxt','stateTxtM'].forEach(i=>{if($(i))$(i).textContent=t;});
+  window._linked=s.state==='linked';
+  const me=s.me?s.me.split(':')[0].replace('@s.whatsapp.net',''):'';
+  if($('meTxt'))$('meTxt').textContent=me?'+'+me:'';
+  if($('meTxt2'))$('meTxt2').textContent=me?'+'+me:'';
+  if(s.stats){$('stReceived').textContent=s.stats.received;$('stSent').textContent=s.stats.sent;$('stAuto').textContent=s.stats.autoReplies;$('stKw').textContent=s.stats.keywordReplies;}
   if(s.state==='linked'){
-    linkArea.classList.add('hidden'); linkedArea.classList.remove('hidden');
-    meTxt.textContent = s.me ? s.me.split(':')[0].replace('@s.whatsapp.net','') : '';
+    $('linkArea').classList.add('hidden');$('linkedArea').classList.remove('hidden');
     if(poll){clearInterval(poll);poll=null;}
   }else{
-    linkArea.classList.remove('hidden'); linkedArea.classList.add('hidden');
-    if(s.state==='waiting') render(s);
+    $('linkArea').classList.remove('hidden');$('linkedArea').classList.add('hidden');
+    if(s.state==='waiting')render(s);
   }
 }
 
-async function logout(){ await jpost('/api/logout'); result.innerHTML=''; refresh(); }
+async function logout(){await jpost('/api/logout');$('result').innerHTML='';toast('Device unlinked');refresh();}
+async function toggleNotify(){const on=!$('tgNotify').classList.contains('on');$('tgNotify').classList.toggle('on',on);await jpost('/api/config/notify',{enabled:on});}
 
 // ---- config ----
 async function loadConfig(){
-  const c = await jget('/api/config');
-  arEnabled.checked=c.autoReply.enabled; arMsg.value=c.autoReply.message;
-  wcEnabled.checked=c.welcome.enabled; wcMsg.value=c.welcome.message;
-  renderKw(c.keywords); renderSchedules(c.schedules);
+  cfg=await jget('/api/config');
+  $('tgAr').classList.toggle('on',cfg.autoReply.enabled);
+  $('arMsg').value=cfg.autoReply.message;
+  $('arCd').value=cfg.autoReply.cooldownMin??30;
+  $('tgArH').classList.toggle('on',!!cfg.autoReply.hoursEnabled);
+  $('arFrom').value=cfg.autoReply.hoursStart||'18:00';
+  $('arTo').value=cfg.autoReply.hoursEnd||'08:00';
+  $('tgWc').classList.toggle('on',cfg.welcome.enabled);
+  $('wcMsg').value=cfg.welcome.message;
+  $('tgNotify').classList.toggle('on',cfg.notifyOnLink!==false);
+  $('blList').value=(cfg.blacklist||[]).join('\n');
+  renderKw(cfg.keywords);renderSchedules(cfg.schedules);renderFeatures();
 }
-async function saveAutoReply(){ await jpost('/api/config/autoreply',{enabled:arEnabled.checked,message:arMsg.value}); }
-async function saveWelcome(){ await jpost('/api/config/welcome',{enabled:wcEnabled.checked,message:wcMsg.value}); }
+function renderFeatures(){
+  const f=[['Auto-reply',cfg.autoReply.enabled],['Keyword bot',(cfg.keywords||[]).length>0],['Group welcome',cfg.welcome.enabled],['Schedules pending',(cfg.schedules||[]).filter(s=>!s.sent).length>0],['Link notification',cfg.notifyOnLink!==false]];
+  $('featList').innerHTML=f.map(([n,on])=>'<div class="flex justify-between items-center"><span class="text-slate-300">'+n+'</span><span class="text-[11px] px-2 py-0.5 rounded-full '+(on?'bg-[#25d366]/15 text-[#25d366]':'bg-slate-800 text-slate-500')+'">'+(on?'ON':'OFF')+'</span></div>').join('');
+}
+async function saveAutoReply(){
+  await jpost('/api/config/autoreply',{enabled:$('tgAr').classList.contains('on'),message:$('arMsg').value,cooldownMin:+$('arCd').value,hoursEnabled:$('tgArH').classList.contains('on'),hoursStart:$('arFrom').value,hoursEnd:$('arTo').value});
+  toast('Auto-reply saved');loadConfig();
+}
+async function saveWelcome(){await jpost('/api/config/welcome',{enabled:$('tgWc').classList.contains('on'),message:$('wcMsg').value});toast('Welcome message saved');loadConfig();}
 
 let kws=[];
-function renderKw(list){ kws=list||[]; if(!kws.length) kws=[{keyword:'',reply:''}]; drawKw(); }
+function renderKw(list){kws=(list&&list.length)?list:[{keyword:'',reply:''}];drawKw();}
 function drawKw(){
-  kwList.innerHTML = kws.map((k,i)=>
+  $('kwList').innerHTML=kws.map((k,i)=>
     '<div class="flex gap-2"><input placeholder="keyword" value="'+esc(k.keyword)+'" oninput="kws['+i+'].keyword=this.value" class="w-1/3">'+
-    '<input placeholder="reply" value="'+esc(k.reply)+'" oninput="kws['+i+'].reply=this.value">'+
-    '<button onclick="kws.splice('+i+',1);drawKw()" class="btn px-3 bg-slate-700 rounded-lg text-slate-400">✕</button></div>').join('');
+    '<input placeholder="reply message" value="'+esc(k.reply)+'" oninput="kws['+i+'].reply=this.value">'+
+    '<button onclick="kws.splice('+i+',1);drawKw()" class="btn btn-ghost px-3 rounded-xl text-slate-500">✕</button></div>').join('');
 }
-function addKw(){ kws.push({keyword:'',reply:''}); drawKw(); }
-async function saveKeywords(){ const r=await jpost('/api/config/keywords',{keywords:kws.filter(k=>k.keyword&&k.reply)}); renderKw(r); alert('Keywords saved'); }
+function addKw(){kws.push({keyword:'',reply:''});drawKw();}
+async function saveKeywords(){const r=await jpost('/api/config/keywords',{keywords:kws.filter(k=>k.keyword&&k.reply)});renderKw(r);toast('Keywords saved');}
 
 async function addSchedule(){
-  if(!scTo.value||!scMsg.value||!scAt.value){alert('Fill all schedule fields');return;}
-  await jpost('/api/schedule',{to:scTo.value.trim(),message:scMsg.value,at:new Date(scAt.value).toISOString()});
-  scTo.value='';scMsg.value='';scAt.value='';
-  loadConfig();
+  if(!$('scTo').value||!$('scMsg').value||!$('scAt').value){toast('Fill all schedule fields',1);return;}
+  await jpost('/api/schedule',{to:$('scTo').value.trim(),message:$('scMsg').value,at:new Date($('scAt').value).toISOString()});
+  $('scTo').value='';$('scMsg').value='';$('scAt').value='';toast('Message scheduled');loadConfig();
 }
 function renderSchedules(list){
-  scList.innerHTML=(list||[]).filter(s=>!s.sent).map(s=>
-    '<div class="flex justify-between items-center text-xs bg-[#0b1220] border border-slate-800 rounded-lg px-3 py-2">'+
-    '<span class="text-slate-300">'+esc(s.to)+' · '+new Date(s.at).toLocaleString()+'</span>'+
-    '<button onclick="delSchedule(\''+s.id+'\')" class="text-slate-500 hover:text-red-400">✕</button></div>').join('');
+  const pend=(list||[]).filter(s=>!s.sent);
+  $('scList').innerHTML=pend.length?pend.map(s=>
+    '<div class="flex justify-between items-center bg-[#0a1322] border border-[#1c2a44] rounded-xl px-3 py-2">'+
+    '<div><div class="text-slate-300">'+esc(s.to)+'</div><div class="text-[10px] text-slate-500">'+new Date(s.at).toLocaleString()+'</div></div>'+
+    '<button onclick="delSchedule(\''+s.id+'\')" class="text-slate-500 hover:text-red-400 px-2">✕</button></div>').join(''):'No scheduled messages.';
 }
-async function delSchedule(id){ await jdel('/api/schedule/'+id); loadConfig(); }
+async function delSchedule(id){await jdel('/api/schedule/'+id);loadConfig();}
+
+async function quickSend(){
+  if(!$('qsTo').value||!$('qsMsg').value){toast('Enter number and message',1);return;}
+  const r=await jpost('/api/send',{to:$('qsTo').value.trim(),message:$('qsMsg').value});
+  if(r.error)toast(r.error,1);else{toast('Message sent');$('qsMsg').value='';}
+}
 
 async function doBulk(){
-  const recips=bkTo.value.split('\n').map(x=>x.trim()).filter(Boolean);
-  if(!recips.length||!bkMsg.value){bkResult.textContent='Add numbers and a message.';return;}
-  bkResult.textContent='Sending to '+recips.length+'...';
-  const r=await jpost('/api/bulk',{recipients:recips,message:bkMsg.value});
-  bkResult.innerHTML='<span class="text-green-400">Sent '+r.sent+'</span> · <span class="text-red-400">Failed '+(r.failed||0)+'</span>';
+  const recips=$('bkTo').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!recips.length||!$('bkMsg').value){$('bkResult').textContent='Add numbers and a message.';return;}
+  $('bkResult').textContent='Sending to '+recips.length+' recipients… (4–6 s gap each)';
+  const r=await jpost('/api/bulk',{recipients:recips,message:$('bkMsg').value});
+  if(r.error){$('bkResult').innerHTML='<span class="text-red-400">'+esc(r.error)+'</span>';return;}
+  $('bkResult').innerHTML='<span class="text-[#25d366]">Sent '+r.sent+'</span> · <span class="text-red-400">Failed '+(r.failed||0)+'</span>';
 }
 
-function esc(s){return String(s||'').replace(/"/g,'&quot;');}
+async function loadGroups(){
+  $('grpList').innerHTML='<div class="pulse text-xs">Loading…</div>';
+  const r=await jget('/api/groups');
+  if(r.error){$('grpList').innerHTML='<div class="text-xs text-red-400">'+esc(r.error)+'</div>';return;}
+  $('grpList').innerHTML=r.length?r.map(g=>
+    '<div class="flex justify-between items-center bg-[#0a1322] border border-[#1c2a44] rounded-xl px-3 py-2.5">'+
+    '<div class="min-w-0"><div class="text-slate-200 text-sm truncate">'+esc(g.name)+'</div><div class="text-[10px] text-slate-500">'+g.size+' members</div></div>'+
+    '<button onclick="navigator.clipboard.writeText(\''+esc(g.id)+'\');toast(\'Group JID copied\')" class="btn btn-ghost px-3 py-1.5 rounded-lg text-[11px] flex-shrink-0 ml-2">Copy JID</button></div>').join(''):'No groups found.';
+}
 
-setMethod('code'); loadConfig(); refresh(); setInterval(refresh,4000);
+async function saveBlacklist(){
+  const list=$('blList').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  await jpost('/api/config/blacklist',{blacklist:list});toast('Blacklist saved');
+}
+
+async function loadLogs(){
+  const r=await jget('/api/logs');
+  $('logList').innerHTML=r.logs.slice().reverse().map(l=>
+    '<div class="'+(l.type==='err'?'text-red-400':l.type==='ok'?'text-[#25d366]':'text-slate-400')+'">'+
+    '<span class="text-slate-600">'+l.time.slice(11,19)+'</span> '+esc(l.msg)+'</div>').join('')||'No logs yet.';
+}
+
+async function resetStats(){await jpost('/api/stats/reset');toast('Counters reset');refresh();}
+
+setMethod('code');loadConfig();refresh();setInterval(refresh,4000);
 </script>
 </body>
 </html>
